@@ -32,9 +32,18 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
     .filter(({ seg }) => segMatchesFilter(seg, activeTag))
 
   const seekTo = (start) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = start
-      audioRef.current.play()
+    const audio = audioRef.current
+    if (!audio) return
+    // Set currentTime directly and force play; guards against the audio
+    // element not being ready yet right after the src changes.
+    const doSeek = () => {
+      audio.currentTime = start
+      audio.play().catch(() => {})
+    }
+    if (audio.readyState >= 1) {
+      doSeek()
+    } else {
+      audio.addEventListener('loadedmetadata', doSeek, { once: true })
     }
   }
 
@@ -74,6 +83,7 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
         </div>
 
         <div className="chip-row">
+          <span className="chip-row-label">Filter:</span>
           {chips.map((c) => {
             if (c.key !== 'all' && counts[c.key] === 0) return null
             return (
@@ -101,6 +111,9 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
           const isActive = currentTime >= seg.start && currentTime < seg.end
           return (
             <div key={idx} className={'seg' + (isActive ? ' active' : '')}>
+              <button className="jump-btn" title="Play from here" onClick={() => seekTo(seg.start)}>
+                ▶
+              </button>
               <span className="seg-time mono">{fmtTime(seg.start)}</span>
               <button className="star-btn" title="Mark as favourite" onClick={() => toggleStar(idx)}>
                 {seg.starred ? '⭐' : '☆'}
