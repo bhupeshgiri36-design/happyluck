@@ -1,17 +1,89 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { parseManualTranscript } from './helpers'
+import { parseManualTranscript, fmtTime } from './helpers'
 import { uploadFileWithProgress } from './uploadHelpers'
 
 export default function AddRecordingModal({ onClose, onSaved }) {
   const [title, setTitle] = useState('')
   const [file, setFile] = useState(null)
+  const [previewUrl, setPreviewUrl] = useState(null)
   const [transcript, setTranscript] = useState('')
   const [saving, setSaving] = useState(false)
   const [progress, setProgress] = useState(0)
   const [logLines, setLogLines] = useState([])
+  const [playbackRate, setPlaybackRate] = useState(1)
+
+  const previewAudioRef = useRef(null)
+  const textareaRef = useRef(null)
 
   const log = (msg) => setLogLines((prev) => [...prev, msg])
+
+  // Build a local preview URL whenever a new file is chosen, and clean up the old one.
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  useEffect(() => {
+    if (previewAudioRef.current) previewAudioRef.current.playbackRate = playbackRate
+  }, [playbackRate, previewUrl])
+
+  // Inserts "M:SS " at the textarea's cursor (or at the end if nothing is focused),
+  // always starting on its own new line, then puts the cursor right after it so
+  // you can just start typing the words for that line.
+  const insertTimestamp = () => {
+    const audio = previewAudioRef.current
+    if (!audio) return
+    const ta = textareaRef.current
+    const stamp = fmtTime(audio.currentTime)
+
+    if (!ta) {
+      setTranscript((prev) => (prev ? prev.replace(/\n?$/, '\n') : '') + `${stamp} `)
+      return
+    }
+
+    const start = ta.selectionStart ?? transcript.length
+    const end = ta.selectionEnd ?? transcript.length
+    const before = transcript.slice(0, start)
+    const after = transcript.slice(end)
+    const needsNewline = before.length > 0 && !before.endsWith('\n')
+    const insert = (needsNewline ? '\n' : '') + `${stamp} `
+    const updated = before + insert + after
+    setTranscript(updated)
+
+    requestAnimationFrame(() => {
+      const pos = before.length + insert.length
+      ta.focus()
+      ta.setSelectionRange(pos, pos)
+    })
+  }
+
+  const togglePlay = () => {
+    const audio = previewAudioRef.current
+    if (!audio) return
+    if (audio.paused) audio.play().catch(() => {})
+    else audio.pause()
+  }
+
+  // Space bar marks a timestamp from anywhere except while actually typing in the textarea.
+  useEffect(() => {
+    const handler = (e) => {
+      if (!previewUrl) return
+      if (document.activeElement === textareaRef.current) return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        insertTimestamp()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewUrl, transcript])
 
   const handleSave = async () => {
     if (!title.trim() || !file) {
@@ -58,7 +130,7 @@ export default function AddRecordingModal({ onClose, onSaved }) {
     <div className="modal-bg">
       <div className="modal">
         <h2>Add a recording</h2>
-        <p className="hint">Upload the audio, then type or paste each line with its timestamp below.</p>
+        <p className="hint">Choose the audio, listen below, and tap "Mark timestamp" the instant a new line starts.</p>
 
         <div className="field">
           <label>Title</label>
@@ -81,9 +153,42 @@ export default function AddRecordingModal({ onClose, onSaved }) {
           />
         </div>
 
+        {previewUrl && (
+          <div className="field timestamp-helper">
+            <label>Listen &amp; mark</label>
+            <audio ref={previewAudioRef} controls src={previewUrl} style={{ width: '100%' }} />
+            <div className="timestamp-controls">
+              <button type="button" className="btn ghost" onClick={togglePlay} disabled={saving}>
+                ▶ / ⏸
+              </button>
+              <button type="button" className="btn" onClick={insertTimestamp} disabled={saving}>
+                ⏱ Mark timestamp
+              </button>
+              <div className="speed-group">
+                {[0.75, 1, 1.25, 1.5].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    className={'speed-btn' + (playbackRate === r ? ' active' : '')}
+                    onClick={() => setPlaybackRate(r)}
+                    disabled={saving}
+                  >
+                    {r}x
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="note">
+              Tip: press <b>Space</b> anywhere outside the text box below to mark a timestamp without reaching for
+              the mouse — it drops a new line at the current playback time. Type the words right after.
+            </div>
+          </div>
+        )}
+
         <div className="field">
           <label>Transcript with timestamps</label>
           <textarea
+            ref={textareaRef}
             rows={8}
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
