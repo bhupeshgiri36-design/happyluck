@@ -420,6 +420,40 @@ audio{ width:100%; }
   font-size:13px;
 }
 .field .note{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+.timestamp-helper{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:14px;
+}
+.timestamp-helper label{ margin-bottom:10px; }
+.timestamp-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+.speed-group{
+  display:flex;
+  gap:4px;
+  margin-left:auto;
+}
+.speed-btn{
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+}
+.speed-btn.active{
+  background:var(--indigo);
+  border-color:var(--indigo);
+  color:#fff;
+}
 .modal-actions{
   display:flex;
   gap:10px;
