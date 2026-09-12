@@ -129,6 +129,46 @@ button{
 .btn.ghost:hover{ border-color:var(--indigo); }
 .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
+/* Sort dropdown in the toolbar, next to search + refresh */
+.sort-select{
+  padding:11px 14px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--panel);
+  color:var(--ink);
+  font-size:14px;
+  font-family:inherit;
+}
+.sort-select:focus{
+  outline:2px solid var(--turmeric);
+  outline-offset:1px;
+}
+
+/* "Directory" heading row above the category chips */
+.directory-header{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+.directory-title{
+  font-size:24px;
+  margin:0;
+}
+.directory-count{
+  font-size:13px;
+  color:var(--muted);
+  font-family:'JetBrains Mono',monospace;
+}
+
+.chip-row-label{
+  font-size:13px;
+  color:var(--muted);
+  font-weight:600;
+  align-self:center;
+  margin-right:2px;
+}
+
 .rec-list{
   display:flex;
   flex-direction:column;
@@ -180,6 +220,25 @@ button{
 .status-pending{ background:#f2e4c8; color:var(--turmeric-deep); }
 .status-transcribing{ background:#dde6ef; color:var(--indigo); }
 .status-error{ background:#f3ddd6; color:var(--error); }
+
+/* Edit/Delete icon buttons at the right of each row in the Directory */
+.rec-actions{
+  display:flex;
+  gap:4px;
+  flex-shrink:0;
+}
+.icon-btn{
+  background:none;
+  border:1px solid transparent;
+  border-radius:6px;
+  font-size:15px;
+  padding:6px 8px;
+  line-height:1;
+}
+.icon-btn:hover{
+  background:var(--panel);
+  border-color:var(--line);
+}
 
 .empty{
   padding:60px 10px;
@@ -234,6 +293,29 @@ audio{ width:100%; }
 }
 .seg:hover{ background:rgba(201,138,31,0.08); }
 .seg.active{ background:rgba(201,138,31,0.16); }
+
+/* Explicit ▶ play button per transcript line (in addition to clicking the text) */
+.jump-btn{
+  flex-shrink:0;
+  background:none;
+  border:1px solid var(--line);
+  border-radius:50%;
+  width:26px;
+  height:26px;
+  padding:0;
+  font-size:11px;
+  color:var(--turmeric-deep);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-top:1px;
+}
+.jump-btn:hover{
+  background:var(--turmeric);
+  border-color:var(--turmeric);
+  color:#fff;
+}
+
 .seg-time{
   font-family:'JetBrains Mono',monospace;
   font-size:13px;
@@ -272,6 +354,7 @@ audio{ width:100%; }
   gap:8px;
   flex-wrap:wrap;
   margin-bottom:18px;
+  align-items:center;
 }
 .chip{
   display:flex;
@@ -343,6 +426,30 @@ audio{ width:100%; }
   justify-content:flex-end;
   margin-top:22px;
 }
+
+/* Real upload progress bar shown while AddRecordingModal is saving */
+.progress-track{
+  position:relative;
+  width:100%;
+  height:10px;
+  background:var(--line);
+  border-radius:6px;
+  overflow:hidden;
+  margin-top:6px;
+}
+.progress-fill{
+  height:100%;
+  background:var(--turmeric);
+  transition:width .15s ease-out;
+}
+.progress-label{
+  display:block;
+  margin-top:6px;
+  font-size:12px;
+  font-family:'JetBrains Mono',monospace;
+  color:var(--muted);
+}
+
 .upload-log{
   margin-top:16px;
   font-family:'JetBrains Mono',monospace;
