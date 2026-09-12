@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import { parseManualTranscript } from './helpers'
+import { uploadFileWithProgress } from './uploadHelpers'
 
 export default function AddRecordingModal({ onClose, onSaved }) {
   const [title, setTitle] = useState('')
   const [file, setFile] = useState(null)
   const [transcript, setTranscript] = useState('')
   const [saving, setSaving] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [logLines, setLogLines] = useState([])
 
   const log = (msg) => setLogLines((prev) => [...prev, msg])
@@ -17,13 +19,13 @@ export default function AddRecordingModal({ onClose, onSaved }) {
       return
     }
     setSaving(true)
+    setProgress(0)
     setLogLines([])
 
     try {
-      log('Uploading audio to Supabase…')
       const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`
-      const { error: upErr } = await supabase.storage.from('recordings-audio').upload(path, file)
-      if (upErr) throw upErr
+      log(`Uploading audio (${(file.size / 1024 / 1024).toFixed(1)} MB)…`)
+      await uploadFileWithProgress('recordings-audio', path, file, (pct) => setProgress(pct))
 
       const segments = parseManualTranscript(transcript)
       const fullText = segments.map((s) => s.text).join(' ')
@@ -65,12 +67,18 @@ export default function AddRecordingModal({ onClose, onSaved }) {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. आजोबांची मुलाखत — भाग १"
+            disabled={saving}
           />
         </div>
 
         <div className="field">
           <label>Audio file</label>
-          <input type="file" accept="audio/*" onChange={(e) => setFile(e.target.files[0])} />
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(e) => setFile(e.target.files[0])}
+            disabled={saving}
+          />
         </div>
 
         <div className="field">
@@ -80,6 +88,7 @@ export default function AddRecordingModal({ onClose, onSaved }) {
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
             placeholder={'0:00 नमस्कार, कसे आहात?\n1:02 [important] लक्षात ठेवा\n1:20 [question] हे बरोबर आहे का?'}
+            disabled={saving}
           />
           <div className="note">
             One line per caption: timestamp, then the text. You don't need to mark favourites here — once saved, tap
@@ -89,12 +98,19 @@ export default function AddRecordingModal({ onClose, onSaved }) {
           </div>
         </div>
 
+        {saving && (
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
+            <span className="progress-label">{progress}%</span>
+          </div>
+        )}
+
         <div className="modal-actions">
           <button className="btn ghost" onClick={onClose} disabled={saving}>
             Cancel
           </button>
           <button className="btn" onClick={handleSave} disabled={saving}>
-            Save recording
+            {saving ? 'Uploading…' : 'Save recording'}
           </button>
         </div>
 
