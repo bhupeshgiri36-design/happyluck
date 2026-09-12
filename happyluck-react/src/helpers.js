@@ -30,6 +30,40 @@ export function statusLabel(s) {
   return { done: 'Ready', pending: 'Queued', transcribing: 'Transcribing…', error: 'Failed' }[s] || s
 }
 
+export const SORT_OPTIONS = [
+  { key: 'newest', label: 'Newest first' },
+  { key: 'oldest', label: 'Oldest first' },
+  { key: 'title', label: 'Title A–Z' },
+  { key: 'duration', label: 'Longest first' },
+]
+
+export function sortRecordings(list, sortKey) {
+  const copy = [...list]
+  switch (sortKey) {
+    case 'oldest':
+      return copy.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    case 'title':
+      return copy.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+    case 'duration':
+      return copy.sort((a, b) => (b.duration_seconds || 0) - (a.duration_seconds || 0))
+    case 'newest':
+    default:
+      return copy.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+  }
+}
+
+// Turns segments back into editable "0:00 [important] text" lines for the edit form.
+export function serializeTranscript(segments) {
+  return (segments || [])
+    .map((seg) => {
+      const bracketTags = []
+      if (seg.starred) bracketTags.push('[star]')
+      if (seg.tag) bracketTags.push(`[${seg.tag}]`)
+      return `${fmtTime(seg.start)} ${bracketTags.join(' ')}${bracketTags.length ? ' ' : ''}${seg.text}`
+    })
+    .join('\n')
+}
+
 // Parses lines like "0:15 Hello there" or "0:39 [star] [important] Hello" into
 // [{start, end, text, tag, starred}] — each line's end is the next line's start.
 export function parseManualTranscript(raw) {
