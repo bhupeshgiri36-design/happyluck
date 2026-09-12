@@ -3,11 +3,13 @@ import { supabase } from './supabaseClient'
 import ListView from './ListView'
 import PlayerView from './PlayerView'
 import AddRecordingModal from './AddRecordingModal'
+import EditRecordingModal from './EditRecordingModal'
 
 export default function App() {
   const [recordings, setRecordings] = useState([])
   const [openRecording, setOpenRecording] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
+  const [editingRecording, setEditingRecording] = useState(null)
 
   const fetchRecordings = useCallback(async () => {
     if (!supabase) return
@@ -26,6 +28,22 @@ export default function App() {
   const handleSegmentsSaved = (id, segments) => {
     setRecordings((prev) => prev.map((r) => (r.id === id ? { ...r, segments } : r)))
     setOpenRecording((prev) => (prev && prev.id === id ? { ...prev, segments } : prev))
+  }
+
+  const handleDelete = async (rec) => {
+    const { error } = await supabase.from('recordings').delete().eq('id', rec.id)
+    if (error) {
+      console.error(error)
+      alert('Could not delete: ' + error.message)
+      return
+    }
+    // Best-effort cleanup of the audio file — a failure here shouldn't block the UI update.
+    if (rec.audio_path) {
+      const { error: storageErr } = await supabase.storage.from('recordings-audio').remove([rec.audio_path])
+      if (storageErr) console.error('Could not remove audio file:', storageErr)
+    }
+    if (openRecording && openRecording.id === rec.id) setOpenRecording(null)
+    fetchRecordings()
   }
 
   if (!supabase) {
@@ -68,7 +86,13 @@ export default function App() {
             onSegmentsSaved={handleSegmentsSaved}
           />
         ) : (
-          <ListView recordings={recordings} onRefresh={fetchRecordings} onOpen={setOpenRecording} />
+          <ListView
+            recordings={recordings}
+            onRefresh={fetchRecordings}
+            onOpen={setOpenRecording}
+            onEdit={setEditingRecording}
+            onDelete={handleDelete}
+          />
         )}
       </main>
 
@@ -81,6 +105,17 @@ export default function App() {
           onClose={() => setShowUpload(false)}
           onSaved={() => {
             setShowUpload(false)
+            fetchRecordings()
+          }}
+        />
+      )}
+
+      {editingRecording && (
+        <EditRecordingModal
+          recording={editingRecording}
+          onClose={() => setEditingRecording(null)}
+          onSaved={() => {
+            setEditingRecording(null)
             fetchRecordings()
           }}
         />
