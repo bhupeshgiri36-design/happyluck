@@ -401,6 +401,22 @@ audio{ width:100%; }
   border-color:var(--turmeric);
   color:#fff;
 }
+.jump-btn.seeking{
+  animation:pulse 0.9s ease-in-out infinite;
+  color:var(--turmeric-deep);
+  border-color:var(--turmeric);
+}
+@keyframes pulse{
+  0%,100%{ opacity:1; }
+  50%{ opacity:0.35; }
+}
+
+.buffering-note{
+  font-size:12px;
+  color:var(--muted);
+  margin:8px 0 0;
+  font-style:italic;
+}
 
 .seg-time{
   font-family:'JetBrains Mono',monospace;
