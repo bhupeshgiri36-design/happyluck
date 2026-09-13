@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { parseManualTranscript, fmtTime } from './helpers'
+import { parseManualTranscript, fmtTime, RECORDING_CATEGORIES, DEFAULT_CATEGORY } from './helpers'
 import { uploadFileWithProgress } from './uploadHelpers'
 
 export default function AddRecordingModal({ onClose, onSaved }) {
@@ -12,6 +12,7 @@ export default function AddRecordingModal({ onClose, onSaved }) {
   const [progress, setProgress] = useState(0)
   const [logLines, setLogLines] = useState([])
   const [playbackRate, setPlaybackRate] = useState(1)
+  const [category, setCategory] = useState(DEFAULT_CATEGORY)
 
   const previewAudioRef = useRef(null)
   const textareaRef = useRef(null)
@@ -112,6 +113,7 @@ export default function AddRecordingModal({ onClose, onSaved }) {
         full_text: fullText,
         duration_seconds: duration,
         status: segments.length ? 'done' : 'pending',
+        category,
       })
       if (insErr) throw insErr
 
@@ -141,6 +143,23 @@ export default function AddRecordingModal({ onClose, onSaved }) {
             placeholder="e.g. आजोबांची मुलाखत — भाग १"
             disabled={saving}
           />
+        </div>
+
+        <div className="field">
+          <label>Category</label>
+          <div className="category-picker">
+            {Object.keys(RECORDING_CATEGORIES).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={'category-pill category-' + key + (category === key ? ' active' : '')}
+                onClick={() => setCategory(key)}
+                disabled={saving}
+              >
+                {RECORDING_CATEGORIES[key].emoji} {RECORDING_CATEGORIES[key].label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="field">
