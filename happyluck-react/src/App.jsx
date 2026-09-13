@@ -46,6 +46,17 @@ export default function App() {
     fetchRecordings()
   }
 
+  const handleCategoryChange = async (rec, category) => {
+    // Optimistic update so the dropdown feels instant, then persist.
+    setRecordings((prev) => prev.map((r) => (r.id === rec.id ? { ...r, category } : r)))
+    const { error } = await supabase.from('recordings').update({ category }).eq('id', rec.id)
+    if (error) {
+      console.error(error)
+      alert('Could not update category: ' + error.message)
+      fetchRecordings() // revert to server truth
+    }
+  }
+
   if (!supabase) {
     return (
       <div className="config-error">
@@ -92,6 +103,7 @@ export default function App() {
             onOpen={setOpenRecording}
             onEdit={setEditingRecording}
             onDelete={handleDelete}
+            onCategoryChange={handleCategoryChange}
           />
         )}
       </main>
