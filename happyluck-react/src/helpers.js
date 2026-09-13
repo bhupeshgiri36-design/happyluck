@@ -18,6 +18,38 @@ export function segMatchesFilter(seg, key) {
   return seg.tag === key
 }
 
+// --- Recording-level categories (a whole recording, not a single transcript line) ---
+export const RECORDING_CATEGORIES = {
+  favourite: { emoji: '⭐', label: 'Favourite' },
+  important: { emoji: '🔴', label: 'Important' },
+  normal: { emoji: '🔵', label: 'Normal' },
+  less_important: { emoji: '⚪', label: 'Less important' },
+}
+
+export const DEFAULT_CATEGORY = 'normal'
+
+export function recordingCategoryChipList() {
+  return [
+    { key: 'all', label: 'All', emoji: '' },
+    ...Object.keys(RECORDING_CATEGORIES).map((k) => ({
+      key: k,
+      label: RECORDING_CATEGORIES[k].label,
+      emoji: RECORDING_CATEGORIES[k].emoji,
+    })),
+  ]
+}
+
+export function recordingCategory(rec) {
+  return rec.category || DEFAULT_CATEGORY
+}
+
+export function recordingMatchesCategory(rec, key) {
+  if (key === 'all') return true
+  return recordingCategory(rec) === key
+}
+
+const CATEGORY_RANK = { favourite: 0, important: 1, normal: 2, less_important: 3 }
+
 export function fmtTime(sec) {
   if (sec == null) return ''
   sec = Math.floor(sec)
@@ -35,6 +67,7 @@ export const SORT_OPTIONS = [
   { key: 'oldest', label: 'Oldest first' },
   { key: 'title', label: 'Title A–Z' },
   { key: 'duration', label: 'Longest first' },
+  { key: 'category', label: 'By category' },
 ]
 
 export function sortRecordings(list, sortKey) {
@@ -46,6 +79,13 @@ export function sortRecordings(list, sortKey) {
       return copy.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
     case 'duration':
       return copy.sort((a, b) => (b.duration_seconds || 0) - (a.duration_seconds || 0))
+    case 'category':
+      return copy.sort((a, b) => {
+        const ra = CATEGORY_RANK[recordingCategory(a)]
+        const rb = CATEGORY_RANK[recordingCategory(b)]
+        if (ra !== rb) return ra - rb
+        return new Date(b.created_at) - new Date(a.created_at)
+      })
     case 'newest':
     default:
       return copy.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
