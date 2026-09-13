@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
-import { parseManualTranscript, serializeTranscript } from './helpers'
+import { parseManualTranscript, serializeTranscript, RECORDING_CATEGORIES, recordingCategory } from './helpers'
 
 export default function EditRecordingModal({ recording, onClose, onSaved }) {
   const [title, setTitle] = useState(recording.title)
   const [transcript, setTranscript] = useState(serializeTranscript(recording.segments))
+  const [category, setCategory] = useState(recordingCategory(recording))
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -28,6 +29,7 @@ export default function EditRecordingModal({ recording, onClose, onSaved }) {
         full_text: fullText,
         duration_seconds: duration,
         status: segments.length ? 'done' : 'pending',
+        category,
       })
       .eq('id', recording.id)
 
@@ -49,6 +51,23 @@ export default function EditRecordingModal({ recording, onClose, onSaved }) {
         <div className="field">
           <label>Title</label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} />
+        </div>
+
+        <div className="field">
+          <label>Category</label>
+          <div className="category-picker">
+            {Object.keys(RECORDING_CATEGORIES).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={'category-pill category-' + key + (category === key ? ' active' : '')}
+                onClick={() => setCategory(key)}
+                disabled={saving}
+              >
+                {RECORDING_CATEGORIES[key].emoji} {RECORDING_CATEGORIES[key].label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="field">
