@@ -166,7 +166,7 @@ export default function AddRecordingModal({ onClose, onSaved }) {
           <label>Audio file</label>
           <input
             type="file"
-            accept="audio/*"
+            accept="audio/*,.aac,.m4a,.mp3,.wav,.ogg,.oga,.opus,.flac,.wma,.3gp,.amr"
             onChange={(e) => setFile(e.target.files[0])}
             disabled={saving}
           />
