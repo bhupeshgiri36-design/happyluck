@@ -2,15 +2,27 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
 import { filterChipList, segMatchesFilter, fmtTime, TAGS } from './helpers'
 
+const SEEK_TIMEOUT_MS = 4000
+
 export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
   const [segments, setSegments] = useState(recording.segments || [])
   const [activeTag, setActiveTag] = useState('all')
   const [currentTime, setCurrentTime] = useState(0)
+  const [seekingIdx, setSeekingIdx] = useState(null)
+  const [buffering, setBuffering] = useState(false)
   const audioRef = useRef(null)
+  const pendingSeekRef = useRef(null) // { handler, timeoutId } for whichever seek is currently in flight
 
   useEffect(() => {
     setSegments(recording.segments || [])
     setActiveTag('all')
+  }, [recording])
+
+  // Clean up any in-flight seek listener/timeout if we navigate away or the
+  // recording changes mid-seek, so nothing fires against a stale element.
+  useEffect(() => {
+    return () => clearPendingSeek()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recording])
 
   const audioUrl = useMemo(() => {
@@ -31,20 +43,59 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
     .map((seg, idx) => ({ seg, idx }))
     .filter(({ seg }) => segMatchesFilter(seg, activeTag))
 
-  const seekTo = (start) => {
+  const clearPendingSeek = () => {
+    const audio = audioRef.current
+    const pending = pendingSeekRef.current
+    if (pending) {
+      if (audio) audio.removeEventListener('loadedmetadata', pending.handler)
+      clearTimeout(pending.timeoutId)
+      pendingSeekRef.current = null
+    }
+  }
+
+  const seekTo = (start, idx) => {
     const audio = audioRef.current
     if (!audio) return
-    // Set currentTime directly and force play; guards against the audio
-    // element not being ready yet right after the src changes.
+
+    // Cancel whatever earlier tap was still waiting — otherwise two quick
+    // taps on different lines can race and the wrong one wins.
+    clearPendingSeek()
+    setSeekingIdx(idx)
+
     const doSeek = () => {
-      audio.currentTime = start
-      audio.play().catch(() => {})
+      clearPendingSeek()
+      setSeekingIdx(null)
+      try {
+        audio.currentTime = start
+      } catch {
+        // Ignore — if this throws, metadata genuinely isn't ready, and the
+        // play() call below will surface as a normal playback failure instead.
+      }
+      const playPromise = audio.play()
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          // Autoplay blocked or interrupted by a newer tap — the native
+          // controls are still right there for the user to hit play manually.
+        })
+      }
     }
+
+    // readyState >= 1 (HAVE_METADATA) means duration/currentTime are safe to set right now.
     if (audio.readyState >= 1) {
       doSeek()
-    } else {
-      audio.addEventListener('loadedmetadata', doSeek, { once: true })
+      return
     }
+
+    // Metadata isn't loaded yet — common on mobile browsers that delay
+    // loading audio until you interact with it. Force it to start loading,
+    // then seek the instant metadata arrives. A hard timeout means a slow or
+    // broken connection can never leave the button looking stuck forever —
+    // it'll just try anyway once the timeout hits.
+    const handler = () => doSeek()
+    const timeoutId = setTimeout(doSeek, SEEK_TIMEOUT_MS)
+    pendingSeekRef.current = { handler, timeoutId }
+    audio.addEventListener('loadedmetadata', handler, { once: true })
+    audio.load()
   }
 
   const toggleStar = async (idx) => {
@@ -72,9 +123,14 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
         <audio
           ref={audioRef}
           controls
+          preload="metadata"
           src={audioUrl}
           onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+          onWaiting={() => setBuffering(true)}
+          onPlaying={() => setBuffering(false)}
+          onCanPlay={() => setBuffering(false)}
         />
+        {buffering && <p className="buffering-note">Buffering… (depends on your connection speed)</p>}
       </div>
 
       <div className="transcript">
@@ -109,17 +165,22 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
 
         {visibleSegments.map(({ seg, idx }) => {
           const isActive = currentTime >= seg.start && currentTime < seg.end
+          const isSeeking = seekingIdx === idx
           return (
             <div key={idx} className={'seg' + (isActive ? ' active' : '')}>
-              <button className="jump-btn" title="Play from here" onClick={() => seekTo(seg.start)}>
-                ▶
+              <button
+                className={'jump-btn' + (isSeeking ? ' seeking' : '')}
+                title="Play from here"
+                onClick={() => seekTo(seg.start, idx)}
+              >
+                {isSeeking ? '⋯' : '▶'}
               </button>
               <span className="seg-time mono">{fmtTime(seg.start)}</span>
               <button className="star-btn" title="Mark as favourite" onClick={() => toggleStar(idx)}>
                 {seg.starred ? '⭐' : '☆'}
               </button>
               <span className="seg-tag">{seg.tag ? TAGS[seg.tag].emoji : ''}</span>
-              <span className="seg-text devanagari" onClick={() => seekTo(seg.start)}>
+              <span className="seg-text devanagari" onClick={() => seekTo(seg.start, idx)}>
                 {seg.text}
               </span>
             </div>
