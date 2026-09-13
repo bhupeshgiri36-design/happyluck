@@ -149,38 +149,42 @@ export default function ListView({ recordings, onRefresh, onOpen, onEdit, onDele
           const cat = recordingCategory(rec)
           return (
             <div key={rec.id} className="rec-row" onClick={() => onOpen(rec)}>
-              <span className="rec-index mono">{String(i + 1).padStart(2, '0')}</span>
-              <span className="rec-info">
-                <p className="rec-title devanagari">{rec.title}</p>
-                <span className="rec-meta">
-                  <span>{rec.duration_seconds ? fmtTime(rec.duration_seconds) : '—'}</span>
-                  <span className={`status-pill status-${rec.status}`}>{statusLabel(rec.status)}</span>
-                  <span>{badgesFor(rec)}</span>
+              <div className="rec-row-top">
+                <span className="rec-index mono">{String(i + 1).padStart(2, '0')}</span>
+                <span className="rec-info">
+                  <p className="rec-title devanagari">{rec.title}</p>
+                  <span className="rec-meta">
+                    <span>{rec.duration_seconds ? fmtTime(rec.duration_seconds) : '—'}</span>
+                    <span className={`status-pill status-${rec.status}`}>{statusLabel(rec.status)}</span>
+                    <span>{badgesFor(rec)}</span>
+                  </span>
                 </span>
-              </span>
+              </div>
 
-              <select
-                className={`category-select category-${cat}`}
-                value={cat}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => handleCategorySelect(e, rec)}
-                title="Change category"
-              >
-                {Object.keys(RECORDING_CATEGORIES).map((key) => (
-                  <option key={key} value={key}>
-                    {RECORDING_CATEGORIES[key].emoji} {RECORDING_CATEGORIES[key].label}
-                  </option>
-                ))}
-              </select>
+              <div className="rec-row-bottom">
+                <select
+                  className={`category-select category-${cat}`}
+                  value={cat}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => handleCategorySelect(e, rec)}
+                  title="Change category"
+                >
+                  {Object.keys(RECORDING_CATEGORIES).map((key) => (
+                    <option key={key} value={key}>
+                      {RECORDING_CATEGORIES[key].emoji} {RECORDING_CATEGORIES[key].label}
+                    </option>
+                  ))}
+                </select>
 
-              <span className="rec-actions">
-                <button className="icon-btn" title="Edit" onClick={(e) => handleEdit(e, rec)}>
-                  ✏️
-                </button>
-                <button className="icon-btn" title="Delete" onClick={(e) => handleDelete(e, rec)}>
-                  🗑️
-                </button>
-              </span>
+                <span className="rec-actions">
+                  <button className="icon-btn" title="Edit" onClick={(e) => handleEdit(e, rec)}>
+                    ✏️
+                  </button>
+                  <button className="icon-btn" title="Delete" onClick={(e) => handleDelete(e, rec)}>
+                    🗑️
+                  </button>
+                </span>
+              </div>
             </div>
           )
         })}
