@@ -240,6 +240,45 @@ button{
   border-color:var(--line);
 }
 
+/* Recording-level category — picker buttons in Add/Edit modals */
+.category-picker{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.category-pill{
+  padding:8px 12px;
+  border-radius:20px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  font-size:13px;
+  font-weight:600;
+  color:var(--muted);
+}
+.category-pill:hover{ border-color:var(--turmeric); }
+.category-pill.active.category-favourite{ background:#f2e4c8; border-color:var(--turmeric); color:var(--turmeric-deep); }
+.category-pill.active.category-important{ background:#f3ddd6; border-color:var(--error); color:var(--error); }
+.category-pill.active.category-normal{ background:#dde6ef; border-color:var(--indigo); color:var(--indigo); }
+.category-pill.active.category-less_important{ background:#ece8de; border-color:var(--muted); color:#5b5343; }
+
+/* Recording-level category — quick-change dropdown inline in each Directory row */
+.category-select{
+  flex-shrink:0;
+  font-size:12px;
+  font-weight:600;
+  padding:6px 8px;
+  border-radius:20px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--muted);
+  cursor:pointer;
+  max-width:150px;
+}
+.category-select.category-favourite{ background:#f2e4c8; border-color:var(--turmeric); color:var(--turmeric-deep); }
+.category-select.category-important{ background:#f3ddd6; border-color:var(--error); color:var(--error); }
+.category-select.category-normal{ background:#dde6ef; border-color:var(--indigo); color:var(--indigo); }
+.category-select.category-less_important{ background:#ece8de; border-color:var(--muted); color:#5b5343; }
+
 .empty{
   padding:60px 10px;
   text-align:center;
