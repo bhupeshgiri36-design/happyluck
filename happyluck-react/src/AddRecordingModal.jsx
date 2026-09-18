@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { parseManualTranscript, fmtTime, RECORDING_CATEGORIES, DEFAULT_CATEGORY } from './helpers'
+import { parseManualTranscript, fmtTime, RECORDING_CATEGORIES, DEFAULT_CATEGORY, MAX_UPLOAD_BYTES, formatBytes } from './helpers'
 import { uploadFileWithProgress } from './uploadHelpers'
 
 export default function AddRecordingModal({ onClose, onSaved }) {
@@ -91,6 +91,17 @@ export default function AddRecordingModal({ onClose, onSaved }) {
       alert('Please add a title and choose a file.')
       return
     }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      alert(
+        `This file is ${formatBytes(file.size)}, which is over the ${formatBytes(MAX_UPLOAD_BYTES)} upload limit ` +
+        `on the current (free) Supabase plan.\n\n` +
+        `Fix: compress the audio first — for example, with ffmpeg:\n` +
+        `ffmpeg -i input.m4a -c:a aac -b:a 64k -ac 1 output_small.m4a\n` +
+        `That shrinks a full 1-hour recording to well under the limit with no real quality loss for speech.\n\n` +
+        `Or upgrade the Supabase project to the Pro plan for a much higher per-file limit.`
+      )
+      return
+    }
     setSaving(true)
     setProgress(0)
     setLogLines([])
@@ -170,6 +181,12 @@ export default function AddRecordingModal({ onClose, onSaved }) {
             onChange={(e) => setFile(e.target.files[0])}
             disabled={saving}
           />
+          {file && (
+            <div className={'note' + (file.size > MAX_UPLOAD_BYTES ? ' size-warning' : '')}>
+              Selected file: {formatBytes(file.size)} (limit: {formatBytes(MAX_UPLOAD_BYTES)})
+              {file.size > MAX_UPLOAD_BYTES && ' — too large, compress it first (see tip on Save).'}
+            </div>
+          )}
         </div>
 
         {previewUrl && (
