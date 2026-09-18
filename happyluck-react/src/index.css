@@ -338,12 +338,20 @@ button{
   color:var(--muted);
   font-size:14px;
   padding:0;
-  margin-bottom:20px;
   display:flex;
   align-items:center;
   gap:6px;
 }
 .back-link:hover{ color:var(--ink); }
+.player-top-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+.share-btn{ white-space:nowrap; }
 .player-card{
   background:var(--panel);
   border:1px solid var(--line);
@@ -522,6 +530,7 @@ audio{ width:100%; }
   font-size:13px;
 }
 .field .note{ font-size:12px; color:var(--muted); margin-top:4px; }
+.field .note.size-warning{ color:var(--error); font-weight:600; }
 
 .timestamp-helper{
   background:var(--paper);
