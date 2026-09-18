@@ -187,13 +187,14 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
           return (
             <div key={idx} className={'seg' + (isActive ? ' active' : '')}>
               <button
-                className={'jump-btn' + (isSeeking ? ' seeking' : '')}
+                className={'jump-bar' + (isSeeking ? ' seeking' : '')}
                 title="Play from here"
                 onClick={() => seekTo(seg.start, idx)}
               >
-                {isSeeking ? '⋯' : '▶'}
+                <span className="jump-bar-icon">{isSeeking ? '⋯' : '🎵'}</span>
+                <span className="jump-bar-time mono">{fmtTime(seg.start)}</span>
+                <span className="jump-bar-play">▶</span>
               </button>
-              <span className="seg-time mono">{fmtTime(seg.start)}</span>
               <button className="star-btn" title="Mark as favourite" onClick={() => toggleStar(idx)}>
                 {seg.starred ? '⭐' : '☆'}
               </button>
