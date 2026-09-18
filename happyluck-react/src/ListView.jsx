@@ -11,6 +11,8 @@ import {
   recordingCategoryChipList,
   recordingCategory,
   recordingMatchesCategory,
+  buildShareLink,
+  copyText,
 } from './helpers'
 
 export default function ListView({ recordings, onRefresh, onOpen, onEdit, onDelete, onCategoryChange }) {
@@ -18,6 +20,7 @@ export default function ListView({ recordings, onRefresh, onOpen, onEdit, onDele
   const [activeTag, setActiveTag] = useState('all')
   const [activeCategory, setActiveCategory] = useState('all')
   const [sortKey, setSortKey] = useState('newest')
+  const [copiedId, setCopiedId] = useState(null)
 
   const chips = filterChipList()
   const categoryChips = recordingCategoryChipList()
@@ -80,6 +83,18 @@ export default function ListView({ recordings, onRefresh, onOpen, onEdit, onDele
   const handleCategorySelect = (e, rec) => {
     e.stopPropagation()
     onCategoryChange(rec, e.target.value)
+  }
+
+  const handleShare = async (e, rec) => {
+    e.stopPropagation()
+    const link = buildShareLink(rec.id)
+    const ok = await copyText(link)
+    if (ok) {
+      setCopiedId(rec.id)
+      setTimeout(() => setCopiedId((id) => (id === rec.id ? null : id)), 2000)
+    } else {
+      window.prompt('Copy this link:', link)
+    }
   }
 
   return (
@@ -177,6 +192,9 @@ export default function ListView({ recordings, onRefresh, onOpen, onEdit, onDele
                 </select>
 
                 <span className="rec-actions">
+                  <button className="icon-btn" title="Copy share link" onClick={(e) => handleShare(e, rec)}>
+                    {copiedId === rec.id ? '✅' : '🔗'}
+                  </button>
                   <button className="icon-btn" title="Edit" onClick={(e) => handleEdit(e, rec)}>
                     ✏️
                   </button>
