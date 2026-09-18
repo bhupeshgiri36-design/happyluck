@@ -25,6 +25,33 @@ export default function App() {
     fetchRecordings()
   }, [fetchRecordings])
 
+  // If the page was opened via a shared link (?rec=<id>), jump straight to that recording
+  // once the list has loaded. Only runs while nothing is already open, so it won't fight
+  // with normal navigation later in the session.
+  useEffect(() => {
+    if (recordings.length === 0 || openRecording) return
+    const params = new URLSearchParams(window.location.search)
+    const sharedId = params.get('rec')
+    if (!sharedId) return
+    const match = recordings.find((r) => String(r.id) === sharedId)
+    if (match) setOpenRecording(match)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordings])
+
+  // Keep the address bar in sync with what's open, so a link copied at any moment
+  // (via the Share button) always points at exactly what's on screen.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (openRecording) {
+      params.set('rec', openRecording.id)
+    } else {
+      params.delete('rec')
+    }
+    const query = params.toString()
+    const newUrl = `${window.location.pathname}${query ? '?' + query : ''}`
+    window.history.replaceState(null, '', newUrl)
+  }, [openRecording])
+
   const handleSegmentsSaved = (id, segments) => {
     setRecordings((prev) => prev.map((r) => (r.id === id ? { ...r, segments } : r)))
     setOpenRecording((prev) => (prev && prev.id === id ? { ...prev, segments } : prev))
