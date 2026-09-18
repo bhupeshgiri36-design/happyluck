@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
 import ListView from './ListView'
 import PlayerView from './PlayerView'
