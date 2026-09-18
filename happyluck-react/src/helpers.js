@@ -4,6 +4,48 @@ export const TAGS = {
   note: { emoji: '📝', label: 'Note' },
 }
 
+// Supabase's FREE plan hard-caps every individual file at 50 MB — this cannot
+// be raised by any setting, only by upgrading to the Pro plan. We stay a
+// little under that (48 MB) so there's headroom for protocol overhead.
+export const MAX_UPLOAD_BYTES = 48 * 1024 * 1024
+
+export function formatBytes(bytes) {
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+}
+
+// Builds a link that deep-links straight to one recording's player view.
+export function buildShareLink(recordingId) {
+  const { origin, pathname } = window.location
+  return `${origin}${pathname}?rec=${recordingId}`
+}
+
+// Copies text to the clipboard, with a fallback for browsers/contexts where
+// the modern Clipboard API isn't available.
+export async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    // fall through to legacy fallback below
+  }
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.left = '-9999px'
+    document.body.appendChild(ta)
+    ta.focus()
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch {
+    return false
+  }
+}
+
 export function filterChipList() {
   return [
     { key: 'all', label: 'All', emoji: '' },
