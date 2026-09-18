@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from './supabaseClient'
-import { filterChipList, segMatchesFilter, fmtTime, TAGS } from './helpers'
+import { filterChipList, segMatchesFilter, fmtTime, TAGS, buildShareLink, copyText } from './helpers'
 
 const SEEK_TIMEOUT_MS = 4000
 
@@ -10,6 +10,7 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
   const [currentTime, setCurrentTime] = useState(0)
   const [seekingIdx, setSeekingIdx] = useState(null)
   const [buffering, setBuffering] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const audioRef = useRef(null)
   const pendingSeekRef = useRef(null) // { handler, timeoutId } for whichever seek is currently in flight
 
@@ -98,6 +99,18 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
     audio.load()
   }
 
+  const handleShare = async () => {
+    const link = buildShareLink(recording.id)
+    const ok = await copyText(link)
+    if (ok) {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    } else {
+      // Clipboard genuinely unavailable — fall back to showing the link so it can be copied by hand.
+      window.prompt('Copy this link:', link)
+    }
+  }
+
   const toggleStar = async (idx) => {
     const updated = segments.map((s, i) => (i === idx ? { ...s, starred: !s.starred } : s))
     setSegments(updated)
@@ -114,9 +127,14 @@ export default function PlayerView({ recording, onBack, onSegmentsSaved }) {
 
   return (
     <div>
-      <button className="back-link" onClick={onBack}>
-        ← Back to all recordings
-      </button>
+      <div className="player-top-row">
+        <button className="back-link" onClick={onBack}>
+          ← Back to all recordings
+        </button>
+        <button className="btn ghost share-btn" onClick={handleShare}>
+          {linkCopied ? '✅ Link copied' : '🔗 Share'}
+        </button>
+      </div>
 
       <div className="player-card">
         <h2 className="devanagari">{recording.title}</h2>
