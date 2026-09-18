@@ -26,21 +26,25 @@ export default function App() {
   }, [fetchRecordings])
 
   // If the page was opened via a shared link (?rec=<id>), jump straight to that recording
-  // once the list has loaded. Only runs while nothing is already open, so it won't fight
-  // with normal navigation later in the session.
+  // once the list has loaded. urlInitRef marks once this initial check has run, so the
+  // URL-sync effect below never wipes the ?rec= param before this gets to read it.
+  const urlInitRef = useRef(false)
   useEffect(() => {
-    if (recordings.length === 0 || openRecording) return
+    if (recordings.length === 0 || urlInitRef.current) return
     const params = new URLSearchParams(window.location.search)
     const sharedId = params.get('rec')
-    if (!sharedId) return
-    const match = recordings.find((r) => String(r.id) === sharedId)
-    if (match) setOpenRecording(match)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (sharedId) {
+      const match = recordings.find((r) => String(r.id) === sharedId)
+      if (match) setOpenRecording(match)
+    }
+    urlInitRef.current = true
   }, [recordings])
 
   // Keep the address bar in sync with what's open, so a link copied at any moment
-  // (via the Share button) always points at exactly what's on screen.
+  // (via the Share button) always points at exactly what's on screen. Won't run
+  // until the initial shared-link check above has had its turn.
   useEffect(() => {
+    if (!urlInitRef.current) return
     const params = new URLSearchParams(window.location.search)
     if (openRecording) {
       params.set('rec', openRecording.id)
