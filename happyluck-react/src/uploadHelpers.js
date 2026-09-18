@@ -49,6 +49,9 @@ export async function uploadFileWithProgress(bucket, path, file, onProgress) {
         } catch {
           // leave message as raw text
         }
+        if (xhr.status === 413) {
+          message = "File is larger than the server's upload limit. Compress the audio first, or upgrade the Supabase plan."
+        }
         reject(new Error(`Upload failed (${xhr.status}): ${message}`))
       }
     }
